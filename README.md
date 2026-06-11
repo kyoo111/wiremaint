@@ -1,33 +1,38 @@
-# AI 일일 리포트 자동화
+# wiremaint — AI 일일 리포트
 
-매일 오전 8시, AI 관련 최신 뉴스·논문·트렌드를 자동 수집하여 HTML 리포트로 생성합니다.
+매일 오전 8시 AI 동향을 자동 수집해 HTML 브리핑으로 저장하는 프로젝트.
 
-## 수집 항목
+→ 목적과 철학: [SOUL.md](SOUL.md)
+→ Claude 행동 규칙: [CLAUDE.md](CLAUDE.md)
 
-| 카테고리 | 내용 |
+## 구조
+
+```
+.claude/skills/
+  issue-writer/   브리핑 검증 후 GitHub 이슈 자동 등록
+  issue-runner/   이슈 읽고 수정 → 커밋 → Close
+
+scheduled-task-prompt.md   ai-daily-report 태스크 프롬프트 (GitHub 백업)
+reports/                   생성된 HTML 브리핑 (gitignore)
+templates/report.html      HTML 템플릿
+```
+
+## 실행
+
+| 할 일 | 명령 |
 |---|---|
-| LLM 모델 | 출시·업데이트·성능 비교 |
-| 기업 AI 전략 | 투자·파트너십·M&A |
-| 규제/정책 | 법안·가이드라인 |
-| AI 기술 트렌드 | 에이전트·멀티모달·RAG |
-| 스타트업/펀딩 | 투자·신생 기업 동향 |
-| 빅테크 동향 | Google·MS·Meta·Apple·네이버·카카오 |
+| 브리핑 즉시 생성 | "오늘 AI 브리핑 만들어줘" |
+| 브리핑 검증 + 이슈 등록 | "issue-writer 실행해줘" |
+| 이슈 처리 | "issue-runner 실행해줘" |
+| 자동 실행 | 매일 오전 8시 (Claude Code 앱이 열려 있을 때) |
 
-## 수집 소스
+## 수집 기준
 
-- 뉴스 기사 (국내 + 글로벌)
-- 연구 논문 (arXiv 등)
-- 공식 블로그/발표
-- SNS/커뮤니티 (X·Reddit·Hacker News)
-- IR/공시 자료
+- 카테고리 6개 (LLM 모델·기업전략·규제·기술트렌드·스타트업·빅테크)
+- 글로벌:국내 = 7:3, 국내 최소 4개
+- 30일 이내 자료만, 발행일 표시 필수
+- 항목당 요약 + 시사점 + 출처 URL
 
-## 출력
+## 개선 히스토리
 
-- 형식: HTML 파일
-- 저장 경로: `reports/YYYY-MM-DD_ai_report.html`
-- 깊이: 요약 + 시사점
-- 항목 수: 10~20개/일
-
-## 실행 방법
-
-Claude Code의 Routines에서 `ai-daily-report` 태스크를 실행하거나, 매일 오전 8시 자동 실행됩니다.
+`git log` 또는 [GitHub Issues](https://github.com/kyoo111/wiremaint/issues?q=is:issue+is:closed) 참고.
