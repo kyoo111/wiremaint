@@ -1,3 +1,5 @@
 .claude/settings.local.json
 reports/
-*.env
+.env
+__pycache__/
+*.pyc
