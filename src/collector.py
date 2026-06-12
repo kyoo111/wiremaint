@@ -25,9 +25,12 @@ def fetch_rss_feeds(feed_urls: list) -> list:
     return items
 
 
+import urllib.parse
+
 def fetch_arxiv(query: str = "artificial intelligence LLM", max_results: int = 5) -> list:
     """arXiv에서 최신 AI 논문을 수집합니다."""
-    url = f"https://export.arxiv.org/api/query?search_query=all:{query}&sortBy=submittedDate&sortOrder=descending&max_results={max_results}"
+    encoded_query = urllib.parse.quote(query)
+    url = f"https://export.arxiv.org/api/query?search_query=all:{encoded_query}&sortBy=submittedDate&sortOrder=descending&max_results={max_results}"
     try:
         feed = feedparser.parse(url)
         return [

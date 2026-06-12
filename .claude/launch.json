@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "wire-report-preview",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "3456", "--directory", "C:\\Users\\Admin\\Desktop\\ai_daily_report\\reports"],
+      "port": 3456
+    }
+  ]
+}

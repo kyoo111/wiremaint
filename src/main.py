@@ -1,10 +1,10 @@
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from collector import fetch_rss_feeds, fetch_arxiv
 from analyzer import analyze_and_categorize
 from generator import generate_html_report
-import sys
-import os
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config.settings import RSS_FEEDS
 
 

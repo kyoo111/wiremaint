@@ -17,7 +17,13 @@ CATEGORIES = [
 ]
 
 RSS_FEEDS = [
+    # Global
     "https://techcrunch.com/feed/",
     "https://venturebeat.com/feed/",
     "https://www.technologyreview.com/feed/",
+    # Domestic
+    "https://www.zdnet.co.kr/rss/all.xml",
+    "https://www.itworld.co.kr/rss/feed/index.php",
+    "https://www.ciokorea.com/rss/feed/index.php",
+    "https://www.bloter.net/rss/all.xml",
 ]

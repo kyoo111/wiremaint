@@ -24,7 +24,7 @@ def analyze_and_categorize(items: list) -> dict:
 응답은 위 형식의 줄바꿈으로 구분된 텍스트로만 작성해주세요."""
 
     message = client.messages.create(
-        model="claude-sonnet-4-6",
+        model="claude-3-5-sonnet-latest",
         max_tokens=4096,
         messages=[{"role": "user", "content": prompt}]
     )
