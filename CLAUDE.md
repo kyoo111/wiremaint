@@ -32,9 +32,103 @@ Copy-Item "C:\Users\Admin\.claude\scheduled-tasks\ai-daily-report\SKILL.md" `
 - 커밋 메시지에 `closes #N` 포함 → 푸시 시 GitHub이 자동 Close.
 - 여러 이슈 동시 처리: `closes #7, closes #8`
 
-## 에이전트 팀 설정
+## Harness Architecture (하네스 구조)
 
-### Managed Agents Multiagent 구조
+공식 문서 기반으로 구축된 4계층 오케스트레이션 시스템.
+
+### 📐 아키텍처 개요
+
+```
+Scheduled Task (매일 8시)
+    ↓
+🎛️ Orchestrator Harness (orchestrator.py - Manual Loop)
+    ├─ 🪝 Hook Framework (hooks.py)
+    ├─ 📊 State Management (.harness_state.json)
+    ├─ 📈 Metrics Collection (logs/harness_metrics.json)
+    │
+    ├─ Phase 1: BriefingGenerator
+    │  └─ Session + SSE Stream
+    │
+    ├─ Phase 2: BriefingValidator
+    │  └─ Validation + Issue Creation
+    │
+    ├─ Phase 3: IssueProcessor
+    │  └─ Issue Handling + Auto-close
+    │
+    └─ Phase 4: DocumentOptimizer
+       └─ Doc Improvement + Commit
+```
+
+### 🪝 Hook System (후킹 시스템)
+
+Phase 전후 및 에러 처리 시점에 자동 실행되는 콜백 메커니즘.
+
+**지원 이벤트**:
+- `on_start` - 전체 시작
+- `before_phase` - Phase 시작 전
+- `after_phase` - Phase 완료 후
+- `on_phase_error` - Phase 에러 발생
+- `on_retry` - 자동 재시도 시작
+- `on_fallback` - Fallback 실행
+- `on_complete` - 전체 완료
+
+**등록된 Hook Callbacks**:
+1. **DefaultHooks** - 콘솔 출력 & 진행상황 알림
+2. **StateTrackingHook** - `.harness_state.json` 실시간 저장
+3. **MetricsHook** - `logs/harness_metrics.json` 성능 지표 수집
+4. **AlertHook** - 에러 발생 시 콘솔 알림
+
+**사용 예시**:
+```python
+from hooks import HarnessHooks, DefaultHooks, StateTrackingHook
+
+hooks = HarnessHooks()
+hooks.register('on_phase_error', DefaultHooks.on_phase_error)
+hooks.register('on_phase_error', StateTrackingHook.on_phase_error)
+
+# Phase 실행 중
+try:
+    result = run_phase()
+except Exception as e:
+    hooks.trigger('on_phase_error', phase_name, e, attempt=1)  # 모든 콜백 자동 실행
+```
+
+### 📊 State & Metrics Files
+
+실행 중 자동으로 생성되는 상태 및 메트릭 파일:
+
+| 파일 | 용도 | 업데이트 시점 |
+|------|------|-------------|
+| `.harness_state.json` | Phase별 상태 추적 | 실시간 (Hook) |
+| `logs/harness_metrics.json` | Phase별 실행 시간 & 토큰 | Phase 완료 시 |
+| `logs/hooks_execution.json` | Hook 실행 이력 | 완료 시 |
+| `logs/orchestrator.log` | 상세 로깅 | 실시간 |
+| `logs/agent_team_result_*.txt` | Phase별 최종 결과 | Phase 완료 시 |
+
+### ⚙️ Harness Components
+
+| 파일 | 용도 | 역할 |
+|------|------|------|
+| `hooks.py` | Hook Framework | Phase 이벤트 처리 |
+| `orchestrator.py` | Main Harness Loop | 4개 Phase 조율 + Hook 통합 |
+| `agents.py` | Agent Management | 에이전트 생성 & 세션 관리 |
+| `agents_config.yaml` | Agent Config | 5개 에이전트 설정 |
+
+### 🔄 Error Handling & Auto-Retry
+
+자동 재시도 로직 (지수 백오프):
+
+```
+Phase 실행 실패
+├─ Attempt 1: 즉시 실행
+├─ Attempt 2: 4초 후 재시도
+├─ Attempt 3: 8초 후 재시도
+└─ Attempt 4: 실패 → 다음 Phase로 진행
+```
+
+각 재시도 시점에 `on_retry` Hook 자동 실행.
+
+## Managed Agents Multiagent 구조
 
 ```
 🎯 Coordinator (조율자)
@@ -54,7 +148,7 @@ pip install -r requirements_agents.txt
 # 2단계: 에이전트 팀 생성 (한 번만 실행)
 python agents.py
 
-# 3단계: 조율자를 통해 전체 프로세스 실행
+# 3단계: 조율자를 통해 전체 프로세스 실행 (Hook Framework 포함)
 python orchestrator.py
 ```
 
@@ -64,7 +158,8 @@ python orchestrator.py
 |------|------|
 | `agents_config.yaml` | 모든 에이전트 설정 (이름, 모델, 시스템 프롬프트) |
 | `agents.py` | 에이전트 생성 및 관리 |
-| `orchestrator.py` | 전체 워크플로우 조율 |
+| `hooks.py` | Hook Framework (Phase 이벤트 처리) |
+| `orchestrator.py` | 전체 워크플로우 조율 + Hook 통합 |
 | `.agent_team_config.json` | 생성된 에이전트 ID 및 환경 (자동 생성) |
 
 ### 에이전트별 역할
@@ -77,10 +172,11 @@ python orchestrator.py
 
 ### 기존 Skills와의 관계
 
-- **Skills** (`@claude/skills/`): 순차적 실행, 자연어 명령
+- **Skills** (`.claude/skills/`): 순차적 실행, 자연어 명령
 - **Agents** (API): 병렬 처리, 에이전트 팀 조율, 상태 관리
+- **Harness** (orchestrator.py): Manual Loop + Hook Framework + State Management
 
-두 시스템은 상호 보완적으로 사용 가능합니다.
+세 시스템은 상호 보완적으로 사용 가능합니다.
 
 ## 커밋 규칙
 
